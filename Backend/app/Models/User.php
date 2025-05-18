@@ -2,17 +2,22 @@
 
 namespace App\Models;
 
- use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Notifications\Notification;
+use Illuminate\Auth\Notifications\ResetPassword;
+
+use App\Notifications\ResetPasswordNotification;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, HasRoles;
+    use HasFactory, Notifiable, HasApiTokens, HasRoles, CanResetPassword;
 
     /**
      * The attributes that are mass assignable.
@@ -62,6 +67,12 @@ public function isStaff()
 public function isDonater()
 {
     return $this->role === 'Donater';
+}
+
+
+public function sendPasswordResetNotification($token)
+{
+    $this->notify(new ResetPasswordNotification($token));
 }
 
 }

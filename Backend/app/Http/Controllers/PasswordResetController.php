@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use App\Models\User;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class PasswordResetController extends Controller
 {
@@ -35,7 +37,7 @@ class PasswordResetController extends Controller
         $validator = Validator::make($request->all(), [
             'token' => 'required',
             'email' => 'required|email',
-            'password' => ['required', 'confirmed', Password::defaults()],
+                 'password' => 'required|min:8|confirmed',
         ]);
 
         if ($validator->fails()) {

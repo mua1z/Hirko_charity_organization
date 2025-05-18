@@ -76,7 +76,7 @@ class AuthController extends Controller
     {
         return response()->json($request->user()->load('roles'));
     }
-
+/*
     public function verifyEmail(Request $request)
     {
         if ($request->user()->hasVerifiedEmail()) {
@@ -88,9 +88,48 @@ class AuthController extends Controller
         }
 
         return response()->json(['message' => 'Email verified successfully']);
+    }*/
+
+   public function verifyEmail(Request $request, $id, $hash)
+{
+    $user = User::find($id);
+
+    if (!$user) {
+        return response()->json(['message' => 'User not found.'], 404);
     }
 
-    public function resendVerificationEmail(Request $request)
+    if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+        return response()->json(['message' => 'Invalid verification link.'], 403);
+    }
+
+    if ($user->hasVerifiedEmail()) {
+        return response()->json(['message' => 'Email already verified.'], 200);
+    }
+
+    $user->markEmailAsVerified();
+
+    return response()->json(['message' => 'Email successfully verified.']);
+}
+
+
+public function resendVerificationEmail(Request $request)
+{
+    $user = $request->user();
+
+    if (!$user) {
+        return response()->json(['message' => 'Unauthenticated.'], 401);
+    }
+
+    if ($user->hasVerifiedEmail()) {
+        return response()->json(['message' => 'Email already verified.'], 200);
+    }
+
+    // Resend the built-in verification email notification
+    $user->sendEmailVerificationNotification();
+
+    return response()->json(['message' => 'Verification email resent.']);
+}
+    /*public function resendVerificationEmail(Request $request)
     {
         if ($request->user()->hasVerifiedEmail()) {
             return response()->json(['message' => 'Email already verified']);
@@ -98,6 +137,6 @@ class AuthController extends Controller
 
         $request->user()->sendEmailVerificationNotification();
 
-        return response()->json(['message' => 'Verification link sent']);
-    }
+        return response()->json(['message' => 'Verification link sent to your email address']);
+    }*/
 }
