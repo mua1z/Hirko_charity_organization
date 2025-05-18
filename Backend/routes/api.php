@@ -49,20 +49,21 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
 // Admin-specific API routes
 Route::middleware(['role:admin'])->group(function () {
-   Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+   Route::get('/dashboard', [AdminController::class, 'dashboard']);
     // Add more admin routes here
 });
 
 // Staff-specific API routes
 Route::middleware([ 'role:staff'])->group(function () {
-    Route::get('/staff/dashboard', [StaffController::class, 'dashboard']);
+    Route::get('/dashboard', [StaffController::class, 'dashboard']);
     // Add more staff routes here
 });
 
 // Donetar-specific API routes
 Route::middleware([ 'role:donetar'])->group(function () {
-  Route::apiResource('donetar', DonetarController::class);
+    Route::get('/dashboard', [DonetarController::class, 'dashboard']);
     // Add more donetar routes here
+
 });
 });
 

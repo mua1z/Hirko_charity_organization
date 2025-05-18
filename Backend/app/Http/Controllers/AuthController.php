@@ -33,9 +33,9 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-    $validated = $validator->validated();
-    Role::firstOrCreate(['name' => $validated['role'], 'guard_name' => 'web']);
-    $user->assignRole($validated['role']);
+        $validated = $validator->validated();
+        Role::firstOrCreate(['name' => $validated['role'], 'guard_name' => 'api']);
+        $user->assignRole($validated['role']);
 
         event(new Registered($user));
 
@@ -45,6 +45,7 @@ class AuthController extends Controller
             'user' => $user,
             'access_token' => $token,
             'token_type' => 'Bearer',
+            'redirect_to' => $this->getDashboardRoute($validated['role'])
         ]);
     }
 
@@ -63,6 +64,7 @@ class AuthController extends Controller
             'user' => $user,
             'access_token' => $token,
             'token_type' => 'Bearer',
+            'redirect_to' => $this->getDashboardRoute($user->getRoleNames()->first())
         ]);
     }
 
@@ -76,67 +78,71 @@ class AuthController extends Controller
     {
         return response()->json($request->user()->load('roles'));
     }
-/*
-    public function verifyEmail(Request $request)
+
+    public function verifyEmail(Request $request, $id, $hash)
     {
-        if ($request->user()->hasVerifiedEmail()) {
-            return response()->json(['message' => 'Email already verified']);
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 404);
         }
 
-        if ($request->user()->markEmailAsVerified()) {
-            event(new Verified($request->user()));
+        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            return response()->json(['message' => 'Invalid verification link.'], 403);
         }
 
-        return response()->json(['message' => 'Email verified successfully']);
-    }*/
+        if ($user->hasVerifiedEmail()) {
+            return response()->json([
+                'message' => 'Email already verified.',
+                'redirect_to' => $this->getDashboardRoute($user->getRoleNames()->first())
+            ], 200);
+        }
 
-   public function verifyEmail(Request $request, $id, $hash)
-{
-    $user = User::find($id);
+        $user->markEmailAsVerified();
 
-    if (!$user) {
-        return response()->json(['message' => 'User not found.'], 404);
+        return response()->json([
+            'message' => 'Email successfully verified.',
+            'redirect_to' => $this->getDashboardRoute($user->getRoleNames()->first())
+        ]);
     }
 
-    if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
-        return response()->json(['message' => 'Invalid verification link.'], 403);
-    }
-
-    if ($user->hasVerifiedEmail()) {
-        return response()->json(['message' => 'Email already verified.'], 200);
-    }
-
-    $user->markEmailAsVerified();
-
-    return response()->json(['message' => 'Email successfully verified.']);
-}
-
-
-public function resendVerificationEmail(Request $request)
-{
-    $user = $request->user();
-
-    if (!$user) {
-        return response()->json(['message' => 'Unauthenticated.'], 401);
-    }
-
-    if ($user->hasVerifiedEmail()) {
-        return response()->json(['message' => 'Email already verified.'], 200);
-    }
-
-    // Resend the built-in verification email notification
-    $user->sendEmailVerificationNotification();
-
-    return response()->json(['message' => 'Verification email resent.']);
-}
-    /*public function resendVerificationEmail(Request $request)
+    public function resendVerificationEmail(Request $request)
     {
-        if ($request->user()->hasVerifiedEmail()) {
-            return response()->json(['message' => 'Email already verified']);
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        $request->user()->sendEmailVerificationNotification();
+        if ($user->hasVerifiedEmail()) {
+            return response()->json([
+                'message' => 'Email already verified.',
+                'redirect_to' => $this->getDashboardRoute($user->getRoleNames()->first())
+            ], 200);
+        }
 
-        return response()->json(['message' => 'Verification link sent to your email address']);
-    }*/
+        $user->sendEmailVerificationNotification();
+
+        return response()->json(['message' => 'Verification email resent.']);
+    }
+
+    /**
+     * Get the dashboard route based on user role
+     */
+    protected function getDashboardRoute($role)
+    {
+        // Convert role to lowercase for case-insensitive comparison
+        $role = strtolower($role);
+
+        switch ($role) {
+            case 'admin':
+                return '/dashboard';
+            case 'staff':
+                return '/dashboard';
+            case 'donetar':
+                return '/dashboard';
+            default:
+                return '/';
+        }
+    }
 }
