@@ -1,4 +1,3 @@
-// src/hooks/useAuth.js
 import { useState, useEffect } from 'react';
 import AuthService from '../services/auth';
 
@@ -12,10 +11,8 @@ export function useAuth() {
       setUser(AuthService.getUser());
     };
     
-    // Check auth status when hook is first used
     checkAuth();
     
-    // Optional: Set up an event listener for auth changes
     const handleStorageChange = () => checkAuth();
     window.addEventListener('storage', handleStorageChange);
     
@@ -27,8 +24,27 @@ export function useAuth() {
   return {
     user,
     isAuthenticated,
-    login: AuthService.login,
-    register: AuthService.register,
-    logout: AuthService.logout,
+    login: async (credentials) => {
+      const data = await AuthService.login(credentials);
+      setUser(AuthService.getUser());
+      setIsAuthenticated(true);
+      return data;
+    },
+    register: async (userData) => {
+      const data = await AuthService.register(userData);
+      setUser(AuthService.getUser());
+      setIsAuthenticated(true);
+      return data;
+    },
+    logout: async () => {
+      await AuthService.logout();
+      setUser(null);
+      setIsAuthenticated(false);
+    },
+    verifyEmail: AuthService.verifyEmail,
+    resendVerificationEmail: AuthService.resendVerificationEmail,
+
+
   };
 }
+export default useAuth;
